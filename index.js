@@ -35,7 +35,7 @@ app.post("/add", upload.single("file"), (req, res) => {
 app.post("/filter", (req, res) => {
   const { status } = req.body;
   const filteredTasks = tasks.filter((task) => task.status === status);
-  res.render("index", { tasks: filteredTasks });
+  res.render("index", { tasks: filteredTasks, filter: status });
 });
 
 const PORT = 3000;

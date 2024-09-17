@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Todo List</title>
+    <title>Tasks List</title>
   </head>
   <body>
-    <h1>Todo List</h1>
+    <a href="http://localhost:3000/"><h1>Tasks List</h1></a>
 
     <form action="/add" method="POST" enctype="multipart/form-data">
       <input type="text" name="title" placeholder="Task title" required />
@@ -22,9 +22,16 @@
     <form action="/filter" method="POST">
       <select name="status">
         <option value="pending">Pending</option>
-        <option value="completed">Completed</option>
+        <% if(typeof filter !== 'undefined' && filter !== null && filter === 'completed') {%>
+          <option value="completed" selected>Completed</option>
+        <%} else {%>
+          <option value="completed">Completed</option>
+        <%}%>
       </select>
       <button type="submit">Filter</button>
+    </form>
+    <form action="http://localhost:3000">
+      <button type="submit">Remove filters</button>
     </form>
 
     <ul>
