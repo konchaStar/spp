@@ -50,7 +50,7 @@ function App() {
         <button type="submit">Add Task</button>
       </form>
       {tasks.forEach((task) => {console.log(task)})}
-      {tasks.map((task) => <div key={task.id}>{task.title}-{task.status}-{task.dueDate}<a href={`http://localhost:3000/uploads/${task.file}`}  target="_blank">View file</a></div>)}
+      {tasks.map((task) => <div key={task.id}>{task.title}-{task.status}-{task.dueDate}<a href={`http://localhost:3000/${task.file}`}  target="_blank">View file</a></div>)}
     </div>
   )
 }
