@@ -33,7 +33,7 @@ function App() {
         setTasks((prevTasks) => [...prevTasks, data]);
         setFile(null);
         setDueDate('');
-        setStatus('');
+        setStatus('pending');
         setTile('');
       })
   }
