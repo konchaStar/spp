@@ -10,6 +10,7 @@ function App() {
   const [dueDate, setDueDate] = useState('')
   const [filter, setFilter] = useState('pending')
   const [file, setFile] = useState(null)
+  const [editing, setEditing] = useState(null)
 
   useEffect(() => {
     fetch("http://localhost:3000")
@@ -60,6 +61,32 @@ function App() {
       .then((data) => setTasks(data))
   }
 
+  const handleEdit = (task) => {
+    setEditing(task.id)
+    setDueDate(task.dueDate)
+    setStatus(task.status)
+    setTile(task.title)
+  }
+
+  const handleUpdate = (e) => {
+    e.preventDefault();
+
+    const task = {title, dueDate, status}
+    fetch(`http://localhost:3000/update/${editing}`, {
+      method: "PUT",
+      body: JSON.stringify(task),
+      headers: {"Content-Type": "application/json"}
+    })
+      .then((data) => data.json())
+      .then((data) => {
+        setEditing(null)
+        setTile('')
+        setDueDate('')
+        setStatus('pending')
+        setTasks(data)
+      })
+  }
+
   return (
     <div>
       <h1>Tasks</h1>
@@ -71,7 +98,7 @@ function App() {
         </select>
         <input type="date" name="dueDate" required value={dueDate} onChange={(e) => { setDueDate(e.target.value) }} />
         <input type="file" name="file" onChange={(e) => setFile(e.target.files[0])} />
-        <button type="submit">Add Task</button>
+        {editing === null ? <button type="submit">Add Task</button> : <button onClick={handleUpdate}>Edit Task</button>}
       </form>
       <form onSubmit={handleFilter}>
         <select name="filter" value={filter} onChange={(e) => setFilter(e.target.value)}>
@@ -82,6 +109,7 @@ function App() {
       </form>
       <button onClick={handleRemoveFilters}>Remove filters</button>
       {tasks.map((task) => <div key={task.id}>{task.title}-{task.status}-{task.dueDate}{task.file && (<a href={`http://localhost:3000/uploads/${task.file}`} target="_blank">View file</a>)}
+        <button onClick={() => handleEdit(task)}>Edit</button>
         <button onClick={(e) => handleDelete(e, task.id)}>Delete</button>
       </div>)}
     </div>

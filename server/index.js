@@ -43,13 +43,29 @@ app.post("/add", upload.single("file"), (req, res) => {
 app.delete("/delete/:id", (req, res) => {
   const id = req.params.id;
   tasks = tasks.filter((task) => task.id !== +id);
-  res.status(200).json(tasks);
+  res.status(201).json(tasks);
 });
 
 app.get("/filter/:filter", (req, res) => {
   const filter = req.params.filter;
   const filteredTasks = tasks.filter((task) => task.status === filter);
   res.status(200).json(filteredTasks);
+});
+
+app.put("/update/:id", (req, res) => {
+  const { title, status, dueDate } = req.body;  
+  const id = req.params.id;
+ 
+  tasks = tasks.map((task) => {
+    if(task.id === +id) {
+      task.title = title;
+      task.status = status;
+      task.dueDate = dueDate;
+    } 
+    return task;
+  })
+
+  res.status(201).json(tasks);
 });
 
 const PORT = 3000;
