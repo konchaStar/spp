@@ -1,7 +1,3 @@
-// const express = require("express");
-// const bodyParser = require("body-parser");
-// const multer = require("multer");
-// const path = require("path");
 import express from "express";
 import cors from "cors";
 import multer from "multer";
@@ -19,12 +15,19 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage: storage });
 
+const upload = multer({ storage: storage });
+let id = 0;
 let tasks = [];
 
 app.get("/", (req, res) => {
   res.status(200).json(tasks);
+});
+
+app.get("/uploads/:filename", (req, res) => {
+  const fileName = req.params.filename;
+  const filePath = path.join(process.cwd(), "uploads", fileName);
+  res.status(200).sendFile(filePath);
 });
 
 app.post("/add", upload.single("file"), (req, res) => {
@@ -32,15 +35,21 @@ app.post("/add", upload.single("file"), (req, res) => {
   const file = req.file ? req.file.filename : null;
   const task = { title, status, dueDate, file };
   tasks.push(task);
-  task.id = tasks.length - 1;
+  task.id = id++;
   res.status(200).json(task);
 });
 
-// app.post("/filter", (req, res) => {
-//   const { status } = req.body;
-//   const filteredTasks = tasks.filter((task) => task.status === status);
-//   res.render("index", { tasks: filteredTasks });
-// });
+app.delete("/delete/:id", (req, res) => {
+  const id = req.params.id;
+  tasks = tasks.filter((task) => task.id !== +id);
+  res.status(200).json(tasks);
+});
+
+app.get("/filter/:filter", (req, res) => {
+  const filter = req.params.filter;
+  const filteredTasks = tasks.filter((task) => task.status === filter);
+  res.status(200).json(filteredTasks);
+});
 
 const PORT = 3000;
 
