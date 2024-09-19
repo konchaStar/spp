@@ -2,74 +2,67 @@ import express from "express";
 import cors from "cors";
 import multer from "multer";
 import path from "path";
+import db from "./model/index.js";
+import { get } from "./controller.js";
+import { create } from "./controller.js";
+import { deleteTask } from "./controller.js";
+import { getByStatus } from "./controller.js";
+import { update } from "./controller.js";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const storage = multer.diskStorage({
-  destination: (_, __, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (_, file, cb) => {
-    cb(null, file.originalname);
-  },
+    destination: (_, __, cb) => {
+        cb(null, "uploads/");
+    },
+    filename: (_, file, cb) => {
+        cb(null, file.originalname);
+    },
 });
 
 
 const upload = multer({ storage: storage });
-let id = 0;
-let tasks = [];
 
-app.get("/", (req, res) => {
-  res.status(200).json(tasks);
-});
+db.sequelize.sync()
+    .then(() => {
+        console.log("Synced db.");
+    })
+    .catch((err) => {
+        console.log("Failed to sync db: " + err.message);
+    });
 
-app.get("/uploads/:filename", (req, res) => {
-  const fileName = req.params.filename;
-  const filePath = path.join(process.cwd(), "uploads", fileName);
-  res.status(200).sendFile(filePath);
+app.get('/', (req, res) => {
+    get(req, res);
 });
 
 app.post("/add", upload.single("file"), (req, res) => {
-  const { title, status, dueDate } = req.body;
-  const file = req.file ? req.file.filename : null;
-  const task = { title, status, dueDate, file };
-  tasks.push(task);
-  task.id = id++;
-  res.status(200).json(task);
+    const file = req.file ? req.file.filename : null;
+    console.log(req.body);
+    create(req, res, file);
+});
+
+app.get("/uploads/:filename", (req, res) => {
+    const fileName = req.params.filename;
+    const filePath = path.join(process.cwd(), "uploads", fileName);
+    res.status(200).sendFile(filePath);
 });
 
 app.delete("/delete/:id", (req, res) => {
-  const id = req.params.id;
-  tasks = tasks.filter((task) => task.id !== +id);
-  res.status(201).json(tasks);
+    deleteTask(req, res);
 });
 
 app.get("/filter/:filter", (req, res) => {
-  const filter = req.params.filter;
-  const filteredTasks = tasks.filter((task) => task.status === filter);
-  res.status(200).json(filteredTasks);
+    getByStatus(req, res);
 });
 
 app.put("/update/:id", (req, res) => {
-  const { title, status, dueDate } = req.body;  
-  const id = req.params.id;
- 
-  tasks = tasks.map((task) => {
-    if(task.id === +id) {
-      task.title = title;
-      task.status = status;
-      task.dueDate = dueDate;
-    } 
-    return task;
-  })
-
-  res.status(201).json(tasks);
+    update(req, res);
 });
 
 const PORT = 3000;
 
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server is running on http://localhost:${PORT}`);
 });

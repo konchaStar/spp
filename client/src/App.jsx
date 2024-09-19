@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 
 function App() {
@@ -13,7 +11,7 @@ function App() {
   const [editing, setEditing] = useState(null)
 
   useEffect(() => {
-    fetch("http://localhost:3000")
+    fetch("http://localhost:3000")  
       .then((data) => data.json())
       .then((data) => setTasks(data))
   }, []);
@@ -44,7 +42,7 @@ function App() {
       method: 'DELETE',
     })
       .then((data) => data.json())
-      .then((data) => setTasks(data))
+      .then((data) => setTasks((prevTasks) => prevTasks.filter((task) => task.id !== +data.id)))
   }
 
   const handleFilter = (e) => {
@@ -79,11 +77,18 @@ function App() {
     })
       .then((data) => data.json())
       .then((data) => {
+        setTasks((prevTasks) => prevTasks.map((task) => {
+          if(task.id === +data.id) {
+            task.title = title
+            task.dueDate = dueDate
+            task.status = status
+          }
+          return task;
+        }))
         setEditing(null)
         setTile('')
         setDueDate('')
         setStatus('pending')
-        setTasks(data)
       })
   }
 
