@@ -1,5 +1,7 @@
 import { useState } from "react"
 import { useNavigate, Link } from 'react-router-dom'
+import { socket } from "./App"
+import { getCookie } from "./App"
 
 function Reg() {
     const [message, setMessage] = useState('')
@@ -19,6 +21,9 @@ function Reg() {
         })
             .then((data) => {
                 if (data.ok) {
+                    socket.auth = {token: getCookie("token")}
+                    socket.disconnect();
+                    socket.connect();
                     navigate("/");
                 } else {
                     return data.json();

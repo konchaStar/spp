@@ -9,6 +9,7 @@ import { authMiddleware } from "./authMiddleware.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { Server } from "socket.io";
+import fs from "fs";
 
 const app = express();
 export const io = new Server(8080, {
@@ -18,16 +19,43 @@ export const io = new Server(8080, {
 });
 
 io.on('connection', (socket) => {
-    socket.on('getTasks', controller.get);
-    socket.on('addTask', controller.create);
-    socket.on('deleteTask', controller.deleteTask);
-    socket.on('getFilteredTasks', controller.getByStatus);
-    socket.on('updateTask', controller.update);
-  });
+
+    const requireAuth = (callback) => {
+        return (...args) => {
+            const token = socket.handshake.auth.token;
+            if (token) {
+                try {
+                    jwt.verify(token, 'asjdkdl-fjjjfjfj-suusudi-mksdj');
+                    callback(...args);
+                } catch (error) {
+                    socket.emit("tokenError");
+                }
+            } else {
+                socket.emit("tokenError");
+            }
+        };
+    };
+
+    socket.on('getTasks', requireAuth(controller.get));
+    socket.on('addTask', requireAuth(controller.create));
+    socket.on('deleteTask', requireAuth(controller.deleteTask));
+    socket.on('getFilteredTasks', requireAuth(controller.getByStatus));
+    socket.on('updateTask', requireAuth(controller.update));
+    socket.on('uploadFile', requireAuth(uploadFile));
+});
 
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
+
+const uploadFile = (data) => {
+    const { fileName, fileData } = data;
+
+    const filePath = path.join(process.cwd(), "uploads", fileName);
+    fs.writeFile(filePath, fileData, 'base64', (err) => {
+        io.emit("uploadedFile", fileName);
+    });
+}
 
 const storage = multer.diskStorage({
     destination: (_, __, cb) => {

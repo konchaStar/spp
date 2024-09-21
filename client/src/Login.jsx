@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-
+import { socket } from './App'
+import { getCookie } from './App'
 
 function Login() {
     const [message, setMessage] = useState('')
@@ -15,11 +16,14 @@ function Login() {
         fetch('http://localhost:3000/login', {
             method: 'POST',
             credentials: 'include',
-            body: JSON.stringify({userName, password}),
+            body: JSON.stringify({ userName, password }),
             headers: { "Content-Type": "application/json" }
         })
             .then((data) => {
                 if (data.ok) {
+                    socket.auth = {token: getCookie("token")}
+                    socket.disconnect();
+                    socket.connect();
                     navigate("/");
                 } else {
                     return data.json();
@@ -32,10 +36,10 @@ function Login() {
         <div>
             <h1>Login</h1>
             <form onSubmit={handleLogin}>
-                <label>User</label><br/>
-                <input type="text" name="userName" required value={userName} onChange={(e) => setUser(e.target.value)} /><br/>
-                <label>Password</label><br/>
-                <input type="password" name="password" required value={password} onChange={(e) => setPassword(e.target.value)} /><br/>
+                <label>User</label><br />
+                <input type="text" name="userName" required value={userName} onChange={(e) => setUser(e.target.value)} /><br />
+                <label>Password</label><br />
+                <input type="password" name="password" required value={password} onChange={(e) => setPassword(e.target.value)} /><br />
                 {message && <span style={{ color: 'red' }}>{message}</span>}<br />
                 <button>Login</button>
             </form>

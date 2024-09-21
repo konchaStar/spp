@@ -3,7 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import './App.css'
 import { io } from 'socket.io-client'
 
-const socket = io("ws://localhost:8080");
+export const getCookie = (name) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+export const socket = io("ws://localhost:8080", { auth: { token: getCookie("token") } })
 
 function App() {
   const [tasks, setTasks] = useState([])
@@ -20,12 +26,7 @@ function App() {
     socket.on("tasks", (data) => setTasks(data))
     socket.on("tokenError", () => {
       navigate("/login")
-    })
-  }, []);
-  const handleAddTask = (e) => {
-    e.preventDefault();
-    const task = { title, dueDate, status, file };
-    socket.emit("addTask", task);
+    });
     socket.on("newTask", (data) => {
       setTasks((prevTasks) => [...prevTasks, data]);
       setFile(null);
@@ -33,6 +34,22 @@ function App() {
       setStatus('pending');
       setTile('');
     });
+    return () => {
+      socket.off("newTask")
+    }
+  }, []);
+  const handleAddTask = (e) => {
+    e.preventDefault();
+    const task = { title, dueDate, status, file: (file ? file.name : null) };
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const fileData = event.target.result.split(',')[1];
+        socket.emit("uploadFile", { fileData, fileName: file.name });
+      };
+      reader.readAsDataURL(file);
+    }
+    socket.emit("addTask", task);
   }
 
   const handleDelete = (e, taskId) => {
@@ -40,6 +57,9 @@ function App() {
     socket.on("deletedTask", (id) => {
       setTasks((prevTasks) => prevTasks.filter((task) => task.id !== +id))
     });
+    return () => {
+      socket.off("deledTask");
+    }
   }
 
   const handleFilter = (e) => {
@@ -47,6 +67,10 @@ function App() {
 
     socket.emit("getFilteredTasks", filter);
     socket.on("filteredTasks", (data) => setTasks(data));
+
+    return () => {
+      socket.off("filteredTasks");
+    }
   }
 
   const handleRemoveFilters = (e) => {
@@ -79,6 +103,9 @@ function App() {
       setDueDate('')
       setStatus('pending')
     })
+    return () => {
+      socket.off("updatedTask");
+    }
   }
 
   return (
