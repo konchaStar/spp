@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './App.css'
+import { io } from 'socket.io-client'
+
+const socket = io("ws://localhost:8080");
 
 function App() {
   const [tasks, setTasks] = useState([])
@@ -12,83 +15,42 @@ function App() {
   const [editing, setEditing] = useState(null)
   const navigate = useNavigate();
 
-  const checkIncorrectRes = (data) => {
-    if (!data.ok) {
-      navigate("/login");
-    }
-  }
-
   useEffect(() => {
-    fetch("http://localhost:3000", {
-      method: 'GET',
-      credentials: 'include'
+    socket.emit("getTasks");
+    socket.on("tasks", (data) => setTasks(data))
+    socket.on("tokenError", () => {
+      navigate("/login")
     })
-      .then((data) => {
-        checkIncorrectRes(data);
-        return data.json()
-      })
-      .then((data) => setTasks(data))
   }, []);
   const handleAddTask = (e) => {
     e.preventDefault();
-    const task = new FormData()
-    task.append('title', title)
-    task.append('dueDate', dueDate)
-    task.append('status', status)
-    task.append('file', file)
-
-    fetch("http://localhost:3000/add", {
-      method: "POST",
-      body: task,
-      credentials: 'include'
-    })
-      .then((data) => {
-        checkIncorrectRes(data);
-        return data.json()
-      })
-      .then((data) => {
-        setTasks((prevTasks) => [...prevTasks, data]);
-        setFile(null);
-        setDueDate('');
-        setStatus('pending');
-        setTile('');
-      })
+    const task = { title, dueDate, status, file };
+    socket.emit("addTask", task);
+    socket.on("newTask", (data) => {
+      setTasks((prevTasks) => [...prevTasks, data]);
+      setFile(null);
+      setDueDate('');
+      setStatus('pending');
+      setTile('');
+    });
   }
 
   const handleDelete = (e, taskId) => {
-    fetch(`http://localhost:3000/delete/${taskId}`, {
-      method: 'DELETE',
-      credentials: 'include'
-    })
-      .then((data) => {
-        checkIncorrectRes(data);
-        return data.json()
-      })
-      .then((data) => setTasks((prevTasks) => prevTasks.filter((task) => task.id !== +data.id)))
+    socket.emit("deleteTask", taskId);
+    socket.on("deletedTask", (id) => {
+      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== +id))
+    });
   }
 
   const handleFilter = (e) => {
     e.preventDefault()
 
-    fetch(`http://localhost:3000/filter/${filter}`, {
-      credentials: 'include'
-    })
-      .then((data) => {
-        checkIncorrectRes(data);
-        return data.json()
-      })
-      .then((data) => setTasks(data))
+    socket.emit("getFilteredTasks", filter);
+    socket.on("filteredTasks", (data) => setTasks(data));
   }
 
   const handleRemoveFilters = (e) => {
-    fetch('http://localhost:3000', {
-      credentials: 'include'
-    })
-      .then((data) => {
-        checkIncorrectRes(data);
-        return data.json()
-      })
-      .then((data) => setTasks(data))
+    socket.emit("getTasks")
   }
 
   const handleEdit = (task) => {
@@ -101,31 +63,22 @@ function App() {
   const handleUpdate = (e) => {
     e.preventDefault();
 
-    const task = { title, dueDate, status }
-    fetch(`http://localhost:3000/update/${editing}`, {
-      method: "PUT",
-      body: JSON.stringify(task),
-      headers: { "Content-Type": "application/json" },
-      credentials: 'include'
+    const task = { title, dueDate, status, id: editing }
+    socket.emit("updateTask", task);
+    socket.on("updatedTask", (id) => {
+      setTasks((prevTasks) => prevTasks.map((task) => {
+        if (task.id === +id) {
+          task.title = title
+          task.dueDate = dueDate
+          task.status = status
+        }
+        return task;
+      }))
+      setEditing(null)
+      setTile('')
+      setDueDate('')
+      setStatus('pending')
     })
-      .then((data) => {
-        checkIncorrectRes(data);
-        return data.json()
-      })
-      .then((data) => {
-        setTasks((prevTasks) => prevTasks.map((task) => {
-          if (task.id === +data.id) {
-            task.title = title
-            task.dueDate = dueDate
-            task.status = status
-          }
-          return task;
-        }))
-        setEditing(null)
-        setTile('')
-        setDueDate('')
-        setStatus('pending')
-      })
   }
 
   return (
