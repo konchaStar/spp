@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './App.css'
 
 function App() {
@@ -9,10 +10,23 @@ function App() {
   const [filter, setFilter] = useState('pending')
   const [file, setFile] = useState(null)
   const [editing, setEditing] = useState(null)
+  const navigate = useNavigate();
+
+  const checkIncorrectRes = (data) => {
+    if (!data.ok) {
+      navigate("/login");
+    }
+  }
 
   useEffect(() => {
-    fetch("http://localhost:3000")  
-      .then((data) => data.json())
+    fetch("http://localhost:3000", {
+      method: 'GET',
+      credentials: 'include'
+    })
+      .then((data) => {
+        checkIncorrectRes(data);
+        return data.json()
+      })
       .then((data) => setTasks(data))
   }, []);
   const handleAddTask = (e) => {
@@ -26,8 +40,12 @@ function App() {
     fetch("http://localhost:3000/add", {
       method: "POST",
       body: task,
+      credentials: 'include'
     })
-      .then((data) => data.json())
+      .then((data) => {
+        checkIncorrectRes(data);
+        return data.json()
+      })
       .then((data) => {
         setTasks((prevTasks) => [...prevTasks, data]);
         setFile(null);
@@ -40,22 +58,36 @@ function App() {
   const handleDelete = (e, taskId) => {
     fetch(`http://localhost:3000/delete/${taskId}`, {
       method: 'DELETE',
+      credentials: 'include'
     })
-      .then((data) => data.json())
+      .then((data) => {
+        checkIncorrectRes(data);
+        return data.json()
+      })
       .then((data) => setTasks((prevTasks) => prevTasks.filter((task) => task.id !== +data.id)))
   }
 
   const handleFilter = (e) => {
     e.preventDefault()
 
-    fetch(`http://localhost:3000/filter/${filter}`)
-      .then((data) => data.json())
+    fetch(`http://localhost:3000/filter/${filter}`, {
+      credentials: 'include'
+    })
+      .then((data) => {
+        checkIncorrectRes(data);
+        return data.json()
+      })
       .then((data) => setTasks(data))
   }
 
   const handleRemoveFilters = (e) => {
-    fetch('http://localhost:3000')
-      .then((data) => data.json())
+    fetch('http://localhost:3000', {
+      credentials: 'include'
+    })
+      .then((data) => {
+        checkIncorrectRes(data);
+        return data.json()
+      })
       .then((data) => setTasks(data))
   }
 
@@ -69,16 +101,20 @@ function App() {
   const handleUpdate = (e) => {
     e.preventDefault();
 
-    const task = {title, dueDate, status}
+    const task = { title, dueDate, status }
     fetch(`http://localhost:3000/update/${editing}`, {
       method: "PUT",
       body: JSON.stringify(task),
-      headers: {"Content-Type": "application/json"}
+      headers: { "Content-Type": "application/json" },
+      credentials: 'include'
     })
-      .then((data) => data.json())
+      .then((data) => {
+        checkIncorrectRes(data);
+        return data.json()
+      })
       .then((data) => {
         setTasks((prevTasks) => prevTasks.map((task) => {
-          if(task.id === +data.id) {
+          if (task.id === +data.id) {
             task.title = title
             task.dueDate = dueDate
             task.status = status
